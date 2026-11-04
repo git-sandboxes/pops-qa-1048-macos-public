@@ -1,0 +1,27 @@
+<!doctype html><meta charset="utf-8"><title>confirm</title>
+<link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet">
+<form id="f" action="javascript:window.__submitted=true" method="post" data-confirm-message="요청할까요?">
+  <button class="btn" type="submit">지금 검사</button>
+</form>
+<dialog class="modal" data-confirm-dialog><div class="modal-box">
+  <p>요청할까요?</p>
+  <button type="button" data-cancel>취소</button>
+  <button class="btn btn-primary" type="button" data-accept>요청하기</button>
+  </div><form method="dialog" class="modal-backdrop"><button type="submit">닫기</button></form>
+</dialog>
+<script>
+  window.__log = [];
+  var dialog = document.querySelector('[data-confirm-dialog]');
+  document.addEventListener('click', function (e) { window.__log.push('click:' + (e.target.textContent||'').trim() + ':' + e.isTrusted); }, true);
+  document.addEventListener('submit', function (event) {
+    window.__log.push('submit');
+    var form = event.target;
+    if (!form.hasAttribute('data-confirm-message') || form.dataset.passed === 'true') return;
+    event.preventDefault();
+    var accept = dialog.querySelector('[data-accept]');
+    function onAccept() { window.__log.push('accept'); dialog.close(); form.dataset.passed = 'true'; form.requestSubmit(); }
+    accept.addEventListener('click', onAccept, { once: true });
+    dialog.showModal();
+    accept.focus();
+  }, true);
+</script>
