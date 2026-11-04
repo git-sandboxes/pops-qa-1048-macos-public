@@ -1,0 +1,42 @@
+name: QA-1048
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  web-click:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
+        with:
+          repository: Cassiiopeia/projectops
+          ref: main
+          path: projectops
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run the scenario from issue 1048
+        run: |
+          uname -a
+          python3 srv.py &
+          sleep 2
+          L() { python3 projectops/skills/pro-launch/scripts/launch_cli.py "$@"; }
+          P() { python3 -c "import json,sys; d=json.load(sys.stdin); print(json.dumps({k: d.get(k) for k in sys.argv[1:]}, ensure_ascii=False)[:600])" "$@"; }
+          L web setup | P ok code summary
+          for mode in normal readonly; do
+            root="$RUNNER_TEMP/$mode"; mkdir -p "$root"; : > posts.log
+            extra=""; [ "$mode" = readonly ] && extra="--readonly"
+            echo "=== $mode"
+            L web open --root "$root" --url http://127.0.0.1:8793/ $extra | P ok code readonly browser
+            L web find --root "$root" --text "지금 검사" | P summary
+            L web click --root "$root" --ref 1 | P ok code summary
+            L web script --root "$root" --confirm-mutating --file state.py | P ok stdout error
+            L web find --root "$root" --text "요청하기" | P ok summary
+            L web click --root "$root" --ref 1 | P ok code summary url
+            L web text --root "$root" | P text
+            echo "RESULT $mode posts=$(wc -l < posts.log | tr -d ' ')"
+            L web close --root "$root" | P ok
+          done
